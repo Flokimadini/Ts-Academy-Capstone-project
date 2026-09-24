@@ -1,0 +1,1928 @@
+{
+  "name": "Capstone   workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "118c215b-fdf9-43b0-9b45-1a31fcb7a175",
+      "name": "Telegram Trigger",
+      "webhookId": "2fff0332-c974-48ec-a169-336a1238c1f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "KfdvKO4aqdI3IRWE",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=You are a warm, highly empathetic AI Reputation Manager for an auto repair shop. Your goal is to make every customer feel truly heard by crafting natural, diversified, and context-aware responses—never use static or repetitive templates.\n\n### CORE OPERATING MODES:\n\n#### MODE 1: FIRST-TIME FEEDBACK EVALUATION\nIf the incoming message is a new review or initial customer feedback, evaluate the text and return ONLY a raw, valid JSON object matching the exact keys below. Do NOT include markdown formatting (no ```json blocks), preambles, or conversational preamble outside the JSON.\n\n{\n  \"sentiment_score\": <integer 1 to 5>,\n  \"severity_level\": \"<Low Critical High Medium |>\",\n  \"routing_category\": \"<Ready Alerted Manager Post to |>\",\n  \"ai_draft_response\": \"<Your custom, empathetic reply>\"\n}\n\nRules for JSON Fields:\n- sentiment_score: Integer from 1 (Extremely Negative) to 5 (Extremely Positive).\n- severity_level: \"Low\", \"Medium\", \"High\", or \"Critical\".\n- routing_category: \"Ready to Post\" if sentiment_score >= 4, else \"Manager Alerted\".\n- ai_draft_response:\n  * POSITIVE FEEDBACK (Score 4-5): Express genuine delight and appreciation. Briefly mention what they enjoyed (e.g., oil change, quick service) and let them know you're always here whenever they need assistance again. Keep it warm, varied, and welcoming.\n  * NEGATIVE FEEDBACK (Score 1-3): Apologize sincerely and acknowledge their specific problem directly. Reassure them immediately that a team member/manager has been notified and will reach out to them as soon as possible to make things right. NEVER ask them to call us, never use placeholder text like [phone number], and keep the tone humble and action-oriented.\n\n---\n\n#### MODE 2: MULTI-TURN CONVERSATION FOLLOW-UP\nIf the user is replying to an ongoing conversation:\n- Do NOT output JSON. Respond directly in plain text as the customer service assistant.\n- IF NEGATIVE / UNRESOLVED: Validate their feelings, confirm that an employee is actively reviewing their case, and let them know someone will be in touch shortly.\n- IF POSITIVE: Thank them warmly, answer any quick questions, and let them know they are welcome back anytime."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        448,
+        64
+      ],
+      "id": "bb7dd448-d192-42c2-9736-cd967ccbf72c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        336,
+        368
+      ],
+      "id": "fc553d03-84d2-4b49-b647-09679672f2a5",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "7UDWYQjXiRJzeukZ",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        576,
+        320
+      ],
+      "id": "ef062c27-bb2e-41ab-a58f-5af471c16fdc",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sentiment_score }}",
+                    "rightValue": 4,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    },
+                    "id": "47a0a835-b1bc-408f-a59c-7bbfbc72ab70"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Positive Feedback"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ad65112f-6de5-4dbe-ab13-58203c76e114",
+                    "leftValue": "={{ $json.sentiment_score < 4 && $json.has_prior_negative_feedback === false && $json.severity_level !== 'Critical' }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mild / First-Time Negative"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "015a969f-8197-4a73-8e2c-600a02d35254",
+                    "leftValue": "={{ $json.has_prior_negative_feedback === true || $json.severity_level === 'Critical' }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Critical / Repeat Escalation"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1728,
+        112
+      ],
+      "id": "7a837420-ced7-4c73-a5b2-412124c2b0b0",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the AI output string into actual JSON key-value pairs\nlet parsedData = {};\ntry {\n  parsedData = JSON.parse($json.output);\n  parsedData.is_json = true;\n} catch (e) {\n  // If it's plain text (multi-turn follow-up chat), retain raw text\n  parsedData = {\n    is_json: false,\n    text_reply: $json.output\n  };\n}\n\nreturn parsedData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        0
+      ],
+      "id": "9f9c3185-1977-430c-9653-b9271fd42cfd",
+      "name": "Format AI Response"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appssroKrssTdDHxa",
+          "mode": "list",
+          "cachedResultName": "Ts Academy feedback  capstone",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl12HBpd01ZSGIdC",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa/tbl12HBpd01ZSGIdC"
+        },
+        "filterByFormula": "={Telegram Id} = '{{ $('Telegram Trigger').item.json.message.from.id }}'",
+        "options": {},
+        "sort": {
+          "property": []
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "ddbf8318-8a99-43b6-973d-f194acc4225c",
+      "name": "Search records for previous complaint",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "vKEhZZ4CjyEBIC57",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retrieve AI output from earlier Code node\nconst aiOutput = $(\"Format AI Response\").first().json;\n\n// Check Airtable search output\nconst airtableRecord = $(\"Search records for previous complaint\").first().json;\n\n// Extract Airtable Record ID (falls back to undefined if search returned no records)\nconst airtableId = airtableRecord ? airtableRecord.id : undefined;\n\n// If Airtable returned a record with data, check for prior negative feedback\nconst hasHistory = Boolean(\n  airtableRecord && \n  airtableRecord.id !== undefined && \n  airtableRecord.fields && \n  airtableRecord.fields[\"Has Prior Negative Feedback\"] === true\n);\n\nreturn {\n  ...aiOutput,\n  id: airtableId,\n  has_prior_negative_feedback: hasHistory\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        0
+      ],
+      "id": "8cb61225-324e-4a86-8fdb-a5e2c31f069c",
+      "name": "Merge AI & Airtable History"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c8933847-13f1-4f94-a14c-87ab67760267",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/start",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "25c96591-5ae1-4758-98da-dfdf197b424b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appssroKrssTdDHxa",
+          "mode": "list",
+          "cachedResultName": "Ts Academy feedback  capstone",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl12HBpd01ZSGIdC",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa/tbl12HBpd01ZSGIdC"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.message.text.replace('/start ', '').trim() }}",
+            "Telegram Id": "={{ $json.message.from.id.toString() }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Location Branch",
+              "displayName": "Location Branch",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Service Completed",
+              "displayName": "Service Completed",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Job Status",
+              "displayName": "Job Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "In Progress",
+                  "value": "In Progress"
+                },
+                {
+                  "name": "Completed",
+                  "value": "Completed"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Prior Negative Feedback",
+              "displayName": "Has Prior Negative Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Raw Feedback",
+              "displayName": "Raw Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Sentiment Score",
+              "displayName": "Sentiment Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Severity Level",
+              "displayName": "Severity Level",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "High",
+                  "value": "High"
+                },
+                {
+                  "name": "Low",
+                  "value": "Low"
+                },
+                {
+                  "name": "Medium",
+                  "value": "Medium"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Routing Category",
+              "displayName": "Routing Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Ready to Post",
+                  "value": "Ready to Post"
+                },
+                {
+                  "name": "Private Queue",
+                  "value": "Private Queue"
+                },
+                {
+                  "name": "Manager Alerted",
+                  "value": "Manager Alerted"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "AI Draft Response",
+              "displayName": "AI Draft Response",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Response Status",
+              "displayName": "Response Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Answered",
+                  "value": "Answered"
+                },
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Telegram Id",
+              "displayName": "Telegram Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Job Status Last Modified",
+              "displayName": "Job Status Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Attachment Summary",
+              "displayName": "Attachment Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        -144
+      ],
+      "id": "9a90debb-bc01-4586-b660-2e23f32aef7e",
+      "name": "Update Telegram ID",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "vKEhZZ4CjyEBIC57",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appssroKrssTdDHxa",
+          "mode": "list",
+          "cachedResultName": "Ts Academy feedback  capstone",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl12HBpd01ZSGIdC",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa/tbl12HBpd01ZSGIdC"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Has Prior Negative Feedback": "={{ $('Switch').item.json.has_prior_negative_feedback }}",
+            "Raw Feedback": "={{ $('Telegram Trigger').item.json.message.text }}",
+            "Sentiment Score": "={{ $('Merge AI & Airtable History').item.json.sentiment_score }}",
+            "Severity Level": "={{ $('Merge AI & Airtable History').item.json.severity_level }}",
+            "AI Draft Response": "={{ $('Switch').item.json.ai_draft_response }}",
+            "Routing Category": "Ready to Post",
+            "id": "={{ $('Merge AI & Airtable History').item.json.id }}",
+            "Draft Status": "Not Needed"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Location Branch",
+              "displayName": "Location Branch",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Service Requested",
+              "displayName": "Service Requested",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Preferred Date/Time",
+              "displayName": "Preferred Date/Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Booking Created At",
+              "displayName": "Booking Created At",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Service Completed",
+              "displayName": "Service Completed",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Job Status",
+              "displayName": "Job Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "In Progress",
+                  "value": "In Progress"
+                },
+                {
+                  "name": "Completed",
+                  "value": "Completed"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Prior Negative Feedback",
+              "displayName": "Has Prior Negative Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Raw Feedback",
+              "displayName": "Raw Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Sentiment Score",
+              "displayName": "Sentiment Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Severity Level",
+              "displayName": "Severity Level",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "High",
+                  "value": "High"
+                },
+                {
+                  "name": "Low",
+                  "value": "Low"
+                },
+                {
+                  "name": "Medium",
+                  "value": "Medium"
+                },
+                {
+                  "name": "Critical",
+                  "value": "Critical"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Routing Category",
+              "displayName": "Routing Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Ready to Post",
+                  "value": "Ready to Post"
+                },
+                {
+                  "name": "Private Queue",
+                  "value": "Private Queue"
+                },
+                {
+                  "name": "Manager Alerted",
+                  "value": "Manager Alerted"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "AI Draft Response",
+              "displayName": "AI Draft Response",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Draft Status",
+              "displayName": "Draft Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Not Needed",
+                  "value": "Not Needed"
+                },
+                {
+                  "name": "Awaiting Review",
+                  "value": "Awaiting Review"
+                },
+                {
+                  "name": "Sent",
+                  "value": "Sent"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Response Status",
+              "displayName": "Response Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Answered",
+                  "value": "Answered"
+                },
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Telegram Id",
+              "displayName": "Telegram Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Job Status Last Modified",
+              "displayName": "Job Status Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Attachment Summary",
+              "displayName": "Attachment Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": false
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2288,
+        -64
+      ],
+      "id": "40819882-3b31-42a6-97a4-8d1be7defd2d",
+      "name": "Update records for customer",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "vKEhZZ4CjyEBIC57",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $('Merge AI & Airtable History').item.json.ai_draft_response }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2016,
+        -64
+      ],
+      "id": "12218c67-4567-4dd5-9f9b-81c5a5d8de5f",
+      "name": "Send a thank you text message",
+      "webhookId": "624093d1-d62f-43a7-8051-88d5e5312dee",
+      "credentials": {
+        "telegramApi": {
+          "id": "KfdvKO4aqdI3IRWE",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2feca105-c6d4-4448-968d-c06090c261c8",
+              "leftValue": "={{ $json.has_prior_negative_feedback }}",
+              "rightValue": "={{ true }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1488,
+        0
+      ],
+      "id": "8dddfcbd-d29e-41a9-bcde-e4271cbe013b",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "sendTo": "madinifloki@gmail.com",
+        "subject": "=⚠️ ESCALATION: Repeat Negative Feedback Received from {{ $('Merge AI & Airtable History').item.json['Customer Name'] || $('Search records for previous complaint').item.json.fields['Customer Name'] }}",
+        "message": "=<p><strong>Attention Manager,</strong></p>\n\n<p>A customer with a <strong>prior history of negative feedback</strong> has submitted new feedback via Telegram and requires immediate attention.</p>\n\n<hr>\n\n<h3>Customer Details</h3>\n<ul>\n  <li><strong>Customer Name:</strong> {{ $('Search records for previous complaint').item.json.fields['Customer Name'] }}</li>\n  <li><strong>Email:</strong> {{ $('Search records for previous complaint').item.json.fields.Email }}</li>\n  <li><strong>Phone:</strong> {{ $('Search records for previous complaint').item.json.fields.Phone || 'N/A' }}</li>\n  <li><strong>Record ID:</strong> {{ $('Search records for previous complaint').item.json.id }}</li>\n</ul>\n\n<h3>Feedback Summary</h3>\n<ul>\n  <li><strong>Raw Feedback:</strong> \"{{ $('Telegram Trigger').item.json.message.text }}\"</li>\n  <li><strong>Sentiment Score:</strong> {{ $('Merge AI & Airtable History').item.json.sentiment_score }} / 5</li>\n  <li><strong>Severity Level:</strong> {{ $('Merge AI & Airtable History').item.json.severity_level }}</li>\n  <li><strong>Routing Category:</strong> Critical / Repeat Negative</li>\n</ul>\n\n<h3>AI Drafted Response (Sent to Customer):</h3>\n<blockquote style=\"background-color: #f9f9f9; padding: 10px; border-left: 4px solid #d9534f;\">\n {{ $('Merge AI & Airtable History').item.json.ai_draft_response }}\n</blockquote>\n\n<hr>\n\n<p>Please review this customer's record in Airtable to take appropriate follow-up action.</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1840,
+        -240
+      ],
+      "id": "a25cb44b-a2f0-4c45-a0ad-2a79c5d2f309",
+      "name": "Send a message to hr for previous negative feedbacks",
+      "webhookId": "8e55163a-7a3c-4ec2-866c-237da2e8a09d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lR9qvEcrD831Avyk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "madinifloki@gmail.com",
+        "subject": "=⚠️ First-Time Negative Feedback Alert: {{ $('Search records for previous complaint').item.json.fields['Customer Name'] }}",
+        "message": "=<p><strong>Attention Manager,</strong></p>\n\n<p>A customer has submitted <strong>first-time negative feedback</strong> via Telegram. An automated AI response has been sent to the customer, and their record in Airtable has been updated for tracking.</p>\n\n<hr>\n\n<h3>Customer Details</h3>\n<ul>\n  <li><strong>Customer Name:</strong> {{ $('Search records for previous complaint').item.json.fields['Customer Name'] }}</li>\n  <li><strong>Email:</strong> {{ $('Search records for previous complaint').item.json.fields.Email }}</li>\n  <li><strong>Phone:</strong> {{ $('Search records for previous complaint').item.json.fields.Phone || 'N/A' }}</li>\n  <li><strong>Record ID:</strong> {{ $('Search records for previous complaint').item.json.id }}</li>\n</ul>\n\n<h3>Feedback Summary</h3>\n<ul>\n  <li><strong>Raw Feedback:</strong> \"{{ $('Telegram Trigger').item.json.message.text }}\"</li>\n  <li><strong>Sentiment Score:</strong> {{ $('Merge AI & Airtable History').item.json.sentiment_score }} / 5</li>\n  <li><strong>Severity Level:</strong> {{ $('Merge AI & Airtable History').item.json.severity_level }}</li>\n  <li><strong>Routing Category:</strong> First-Time Negative</li>\n</ul>\n\n<h3>AI Drafted Response (Sent to Customer):</h3>\n<blockquote style=\"background-color: #f9f9f9; padding: 12px; border-left: 4px solid #f0ad4e;\">\n  {{ $('Merge AI & Airtable History').item.json.ai_draft_response }}\n</blockquote>\n\n<hr>\n\n<p>Note: The customer's record has been updated with <em>Has Prior Negative Feedback = True</em> so any future complaints will automatically escalate as critical.</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2288,
+        144
+      ],
+      "id": "e5c43060-ded7-46ef-82b9-1899ded570ae",
+      "name": "Notify Manager",
+      "webhookId": "05355f14-b576-452c-95e3-8f5c4090dd1d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lR9qvEcrD831Avyk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appssroKrssTdDHxa",
+          "mode": "list",
+          "cachedResultName": "Ts Academy feedback  capstone",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl12HBpd01ZSGIdC",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa/tbl12HBpd01ZSGIdC"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Raw Feedback": "={{ $('Telegram Trigger').item.json.message.text }}",
+            "Sentiment Score": "={{ $json.sentiment_score }}",
+            "Severity Level": "={{ $json.severity_level }}",
+            "AI Draft Response": "={{ $json.ai_draft_response }}",
+            "Routing Category": "Private Queue",
+            "id": "={{ $json.id }}",
+            "Has Prior Negative Feedback": true,
+            "Draft Status": "Awaiting Review"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Location Branch",
+              "displayName": "Location Branch",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Service Requested",
+              "displayName": "Service Requested",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Preferred Date/Time",
+              "displayName": "Preferred Date/Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Booking Created At",
+              "displayName": "Booking Created At",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Service Completed",
+              "displayName": "Service Completed",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Job Status",
+              "displayName": "Job Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "In Progress",
+                  "value": "In Progress"
+                },
+                {
+                  "name": "Completed",
+                  "value": "Completed"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Prior Negative Feedback",
+              "displayName": "Has Prior Negative Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Raw Feedback",
+              "displayName": "Raw Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Sentiment Score",
+              "displayName": "Sentiment Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Severity Level",
+              "displayName": "Severity Level",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "High",
+                  "value": "High"
+                },
+                {
+                  "name": "Low",
+                  "value": "Low"
+                },
+                {
+                  "name": "Medium",
+                  "value": "Medium"
+                },
+                {
+                  "name": "Critical",
+                  "value": "Critical"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Routing Category",
+              "displayName": "Routing Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Ready to Post",
+                  "value": "Ready to Post"
+                },
+                {
+                  "name": "Private Queue",
+                  "value": "Private Queue"
+                },
+                {
+                  "name": "Manager Alerted",
+                  "value": "Manager Alerted"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "AI Draft Response",
+              "displayName": "AI Draft Response",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Draft Status",
+              "displayName": "Draft Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Not Needed",
+                  "value": "Not Needed"
+                },
+                {
+                  "name": "Awaiting Review",
+                  "value": "Awaiting Review"
+                },
+                {
+                  "name": "Sent",
+                  "value": "Sent"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Response Status",
+              "displayName": "Response Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Answered",
+                  "value": "Answered"
+                },
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Telegram Id",
+              "displayName": "Telegram Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Job Status Last Modified",
+              "displayName": "Job Status Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Attachment Summary",
+              "displayName": "Attachment Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": false
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        144
+      ],
+      "id": "912ca480-7058-43fb-b082-5050a3acf122",
+      "name": "Update records for customer mild first time message",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "vKEhZZ4CjyEBIC57",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appssroKrssTdDHxa",
+          "mode": "list",
+          "cachedResultName": "Ts Academy feedback  capstone",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl12HBpd01ZSGIdC",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa/tbl12HBpd01ZSGIdC"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Has Prior Negative Feedback": "={{ $json.has_prior_negative_feedback }}",
+            "Raw Feedback": "={{ $('Telegram Trigger').item.json.message.text }}",
+            "Sentiment Score": "={{ $json.sentiment_score }}",
+            "AI Draft Response": "={{ $json.ai_draft_response }}",
+            "Routing Category": "Private Queue",
+            "id": "={{ $json.id }}",
+            "Severity Level": "={{ $json.severity_level }}",
+            "Draft Status": "Awaiting Review"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Location Branch",
+              "displayName": "Location Branch",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Service Requested",
+              "displayName": "Service Requested",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Preferred Date/Time",
+              "displayName": "Preferred Date/Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Booking Created At",
+              "displayName": "Booking Created At",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Service Completed",
+              "displayName": "Service Completed",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Job Status",
+              "displayName": "Job Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "In Progress",
+                  "value": "In Progress"
+                },
+                {
+                  "name": "Completed",
+                  "value": "Completed"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Prior Negative Feedback",
+              "displayName": "Has Prior Negative Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Raw Feedback",
+              "displayName": "Raw Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Sentiment Score",
+              "displayName": "Sentiment Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Severity Level",
+              "displayName": "Severity Level",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "High",
+                  "value": "High"
+                },
+                {
+                  "name": "Low",
+                  "value": "Low"
+                },
+                {
+                  "name": "Medium",
+                  "value": "Medium"
+                },
+                {
+                  "name": "Critical",
+                  "value": "Critical"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Routing Category",
+              "displayName": "Routing Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Ready to Post",
+                  "value": "Ready to Post"
+                },
+                {
+                  "name": "Private Queue",
+                  "value": "Private Queue"
+                },
+                {
+                  "name": "Manager Alerted",
+                  "value": "Manager Alerted"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "AI Draft Response",
+              "displayName": "AI Draft Response",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Draft Status",
+              "displayName": "Draft Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Not Needed",
+                  "value": "Not Needed"
+                },
+                {
+                  "name": "Awaiting Review",
+                  "value": "Awaiting Review"
+                },
+                {
+                  "name": "Sent",
+                  "value": "Sent"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Response Status",
+              "displayName": "Response Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Answered",
+                  "value": "Answered"
+                },
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Telegram Id",
+              "displayName": "Telegram Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Job Status Last Modified",
+              "displayName": "Job Status Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Attachment Summary",
+              "displayName": "Attachment Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": false
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        384
+      ],
+      "id": "9d4fbf1f-2ffd-4fe6-9f01-215ed9825c05",
+      "name": "Update records for customer critical",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "vKEhZZ4CjyEBIC57",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "madinifloki@gmail.com",
+        "subject": "=🚨 URGENT: Critical Feedback Escalation - {{ $('Search records for previous complaint').item.json.fields['Customer Name'] || $('Telegram Trigger').item.json.message.from.first_name }}",
+        "message": "=<p><strong>Attention HR / Management Team,</strong></p>  <p>A customer has submitted <strong style=\"color: #d9534f;\">Critical Negative Feedback</strong> via Telegram requiring immediate intervention and review.</p>  <hr>  <h3>Customer Details</h3> <ul>   <li><strong>Customer Name:</strong> {{ $('Search records for previous complaint').item.json.fields['Customer Name'] || $('Telegram Trigger').item.json.message.from.first_name }}</li>   <li><strong>Email:</strong> {{ $('Search records for previous complaint').item.json.fields.Email || 'N/A' }}</li>   <li><strong>Phone:</strong> {{ $('Search records for previous complaint').item.json.fields.Phone || 'N/A' }}</li>   <li><strong>Record ID:</strong> {{ $('Search records for previous complaint').item.json.id || 'N/A' }}</li> </ul>  <h3>Feedback Details</h3> <ul>   <li><strong>Raw Feedback:</strong> \"{{ $('Telegram Trigger').item.json.message.text }}\"</li>   <li><strong>Sentiment Score:</strong> {{ $('Merge AI & Airtable History').item.json.sentiment_score }} / 5</li>   <li><strong>Severity Level:</strong> <span style=\"color: #d9534f; font-weight: bold;\">{{ $('Merge AI & Airtable History').item.json.severity_level }}</span></li>   <li><strong>Routing Category:</strong> Critical Escalation</li> </ul>  <h3>AI Drafted Response (Sent to Customer):<p><strong>Attention HR / Management Team,</strong></p>\n\n<p>A customer has submitted <strong style=\"color: #d9534f;\">Critical Negative Feedback</strong> via Telegram requiring immediate intervention and review.</p>\n\n<hr>\n\n<h3>Customer Details</h3>\n<ul>\n  <li><strong>Customer Name:</strong> {{ $('Search records for previous complaint').item.json.fields['Customer Name'] || $('Telegram Trigger').item.json.message.from.first_name }}</li>\n  <li><strong>Email:</strong> {{ $('Search records for previous complaint').item.json.fields.Email || 'N/A' }}</li>\n  <li><strong>Phone:</strong> {{ $('Search records for previous complaint').item.json.fields.Phone || 'N/A' }}</li>\n  <li><strong>Record ID:</strong> {{ $('Search records for previous complaint').item.json.id || 'N/A' }}</li>\n</ul>\n\n<h3>Feedback Details</h3>\n<ul>\n  <li><strong>Raw Feedback:</strong> \"{{ $('Telegram Trigger').item.json.message.text }}\"</li>\n  <li><strong>Sentiment Score:</strong> {{ $('Merge AI & Airtable History').item.json.sentiment_score }} / 5</li>\n  <li><strong>Severity Level:</strong> <span style=\"color: #d9534f; font-weight: bold;\">{{ $('Merge AI & Airtable History').item.json.severity_level }}</span></li>\n  <li><strong>Routing Category:</strong> Critical Escalation</li>\n</ul>\n\n<h3>AI Drafted Response (Sent to Customer):</h3>\n<blockquote style=\"background-color: #fdf2f2; padding: 12px; border-left: 4px solid #d9534f;\">\n  {{ $('Merge AI & Airtable History').item.json.ai_draft_response }}\n</blockquote>\n\n<hr>\n\n<p><strong>Action Required:</strong> Please review this case immediately and assign an HR or Management representative to conduct follow-up outreach with the customer and involved personnel.</p></h3> <blockquote style=\"background-color: #fdf2f2; padding: 12px; border-left: 4px solid #d9534f;\">   {{ $('Merge AI & Airtable History').item.json.ai_draft_response }} </blockquote>  <hr>  <p><strong>Action Required:</strong> Please review this case immediately and assign an HR or Management representative to conduct follow-up outreach with the customer and involved personnel.</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2272,
+        384
+      ],
+      "id": "8e43fe51-0a58-4180-8380-8a5d817029dd",
+      "name": "Notify manager",
+      "webhookId": "2bea5d14-2725-4e3d-8612-e334eef3e019",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lR9qvEcrD831Avyk",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Format AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a thank you text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update records for customer mild first time message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update records for customer critical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format AI Response": {
+      "main": [
+        [
+          {
+            "node": "Search records for previous complaint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records for previous complaint": {
+      "main": [
+        [
+          {
+            "node": "Merge AI & Airtable History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge AI & Airtable History": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Update Telegram ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update records for customer": {
+      "main": [
+        []
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send a message to hr for previous negative feedbacks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update records for customer mild first time message": {
+      "main": [
+        [
+          {
+            "node": "Notify Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update records for customer critical": {
+      "main": [
+        [
+          {
+            "node": "Notify manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a thank you text message": {
+      "main": [
+        [
+          {
+            "node": "Update records for customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "cc7df2d7-68ae-4466-9c34-f1976985b730",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b80e87fb9e732b5ca8dfedc6eb9bc3ea5f772f5c414be886e5a8f83ca6c67393"
+  },
+  "nodeGroups": [],
+  "id": "YHu2iL502kbHRPpP",
+  "tags": []
+}

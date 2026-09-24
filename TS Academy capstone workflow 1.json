@@ -1,0 +1,406 @@
+{
+  "name": "TS Academy capstone workflow 1",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -256,
+        80
+      ],
+      "id": "c2df0bc8-2ebe-47a8-8f85-8ee220aeb1d1",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appssroKrssTdDHxa",
+          "mode": "list",
+          "cachedResultName": "Ts Academy feedback  capstone",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl12HBpd01ZSGIdC",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa/tbl12HBpd01ZSGIdC"
+        },
+        "filterByFormula": "AND({Job Status} = 'Completed', {Response Status} = '')",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -32,
+        80
+      ],
+      "id": "e0c62d06-4f0d-47e8-a627-8b90578111c5",
+      "name": "Get Customer Job Details",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "vKEhZZ4CjyEBIC57",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appssroKrssTdDHxa",
+          "mode": "list",
+          "cachedResultName": "Ts Academy feedback  capstone",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl12HBpd01ZSGIdC",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa/tbl12HBpd01ZSGIdC"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "Response Status": "Pending"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Location Branch",
+              "displayName": "Location Branch",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Service Completed",
+              "displayName": "Service Completed",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Job Status",
+              "displayName": "Job Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "In Progress",
+                  "value": "In Progress"
+                },
+                {
+                  "name": "Completed",
+                  "value": "Completed"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Has Prior Negative Feedback",
+              "displayName": "Has Prior Negative Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Raw Feedback",
+              "displayName": "Raw Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Sentiment Score",
+              "displayName": "Sentiment Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Severity Level",
+              "displayName": "Severity Level",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "High",
+                  "value": "High"
+                },
+                {
+                  "name": "Low",
+                  "value": "Low"
+                },
+                {
+                  "name": "Medium",
+                  "value": "Medium"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Routing Category",
+              "displayName": "Routing Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Ready to Post",
+                  "value": "Ready to Post"
+                },
+                {
+                  "name": "Private Queue",
+                  "value": "Private Queue"
+                },
+                {
+                  "name": "Manager Alerted",
+                  "value": "Manager Alerted"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "AI Draft Response",
+              "displayName": "AI Draft Response",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Response Status",
+              "displayName": "Response Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Answered",
+                  "value": "Answered"
+                },
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Job Status Last Modified",
+              "displayName": "Job Status Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Attachment Summary",
+              "displayName": "Attachment Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        80
+      ],
+      "id": "16d111f1-02a6-4fe4-8951-abd5df77f53f",
+      "name": "Update record to avoid duplicate",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "vKEhZZ4CjyEBIC57",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.fields.Email }}",
+        "subject": "=How was your recent service with us, {{ $json.fields['Customer Name'] }}?",
+        "message": "=<p>Hi {{ $json.fields['Customer Name'] }},</p>\n\n<p>Thank you for choosing us! We hope your recent service went smoothly.</p>\n\n<p>We’d love to hear your thoughts. Please click the link below to share your feedback directly with our Telegram Assistant:</p>\n\n<p><a href=\"https://t.me/Group_67_Assistant_bot?start={{ $json.id }}\">👉 Leave Feedback on Telegram</a></p>\n\n<p>Thank you,<br>Customer Experience Team</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        80
+      ],
+      "id": "bf38655e-77c8-4d4c-b22b-96e7e77de25f",
+      "name": "Send Customer  A Feedback Message",
+      "webhookId": "ab1c8863-a7b3-4cdd-8ad0-ba8de8edcf23",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lR9qvEcrD831Avyk",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Customer Job Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Customer Job Details": {
+      "main": [
+        [
+          {
+            "node": "Update record to avoid duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update record to avoid duplicate": {
+      "main": [
+        [
+          {
+            "node": "Send Customer  A Feedback Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a3322476-df4a-4459-b431-acc22a0bcf6a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b80e87fb9e732b5ca8dfedc6eb9bc3ea5f772f5c414be886e5a8f83ca6c67393"
+  },
+  "nodeGroups": [],
+  "id": "PASYp42f1bwBWeZv",
+  "tags": []
+}

@@ -1,0 +1,127 @@
+{
+  "name": "Workflow 3: Send Approved Response",
+  "nodes": [
+    {
+      "parameters": {
+        "chatId": "={{ $json.fields['Telegram Id'] }}",
+        "text": "={{ $json.fields['AI Draft Response'] }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "8ac2ce80-2319-49e0-bba4-b01e1f5eea25",
+      "name": "Send a text message",
+      "webhookId": "9efcea2f-c7f2-4c2d-ae0d-e782c8ed21f9",
+      "credentials": {
+        "telegramApi": {
+          "id": "KfdvKO4aqdI3IRWE",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2c075881-9a72-4570-a554-4101c27fd9fd",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appssroKrssTdDHxa",
+          "mode": "list",
+          "cachedResultName": "Ts Academy feedback  capstone",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl12HBpd01ZSGIdC",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appssroKrssTdDHxa/tbl12HBpd01ZSGIdC"
+        },
+        "filterByFormula": "AND({Draft Status} = \"Sent\", {Review Posted} = FALSE())",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "9c0905e2-267e-4f97-a013-58c67a47e60a",
+      "name": "Search records",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "vKEhZZ4CjyEBIC57",
+          "name": "Airtable account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4fdd77a3-615b-48f1-af73-b97bc34a69e9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b80e87fb9e732b5ca8dfedc6eb9bc3ea5f772f5c414be886e5a8f83ca6c67393"
+  },
+  "nodeGroups": [],
+  "id": "qz3Q389KlgdIslQ8",
+  "tags": []
+}
